@@ -76,7 +76,7 @@ exports.test_access = function(test) {
   var z = access('x.y', obj)
   test.deepEqual(obj, {})
   test.strictEqual(z, undefined)
-
+  test.strictEqual(access('x.y'), undefined)
   test.done()
 }
 

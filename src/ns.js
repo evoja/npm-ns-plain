@@ -72,10 +72,31 @@ me.namespace = function namespace(name, context) {
  * If sub-object or any of sub-objects from the chain does not exist
  * it returns undefined without creating anything.
  *
+ * If context is not set it returns undefined.
+ *
  * Does not modifies context
  */
-me.access = function access(name, context) {
-  return rawNamespace(name, context, true)
+me.access = function access(name, parent) {
+  var prevIndex = 0;
+  var nextIndex = name.indexOf('.', 0);
+
+  do
+  {
+    if (!parent) {
+      return undefined
+    }
+
+    nextIndex = name.indexOf('.', prevIndex);
+    var key = nextIndex >= 0
+      ? name.substring(prevIndex, nextIndex)
+      : name.substring(prevIndex);
+
+    parent = parent[key];
+    prevIndex = nextIndex + 1;
+  }
+  while(nextIndex >= 0);
+
+  return parent;
 }
 
 /**
