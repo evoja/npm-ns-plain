@@ -59,3 +59,60 @@ namespace('a.b', obj)
 namespace('a.b')
 // window.a.b <= {}
 ```
+
+
+### assignInPlace
+`assignInPlace(path_to_subobj, value, context)`
+
+Replaces deep value in the context by changing it. Keeps all other fields the same.
+It creates sub objects if it's necessary.
+
+If context is undefined it gets global object (`window` or `global`)
+
+
+##### Examples
+```js
+assignInPlace('a.b', 100, {a: {b: 1, c: 2}, d: {e: 3}})
+// => {
+//   a: {
+//     b: 100,
+//     c: 2
+//   },
+//   d: {e: 3}
+// }
+
+assignInPlace('a.b', 100, {})
+// => {a: {b: 100}}
+```
+
+### appendInPlace
+`appendInPlace(path_to_subobj, value, context)`
+
+Appends new fields to a deep object in the context. Keeps all other fields the same.
+It creates sub objects if it's necessary.
+
+If context is undefined it gets global object (`window` or `global`)
+
+Returns `undefined`
+
+
+##### Examples
+```js
+appendInPlace('a.b',
+              {y: 20, z: 30},
+              {a: {b: {x: 1, y: 2}, c: 2}, d: {e: 3}})
+// => {
+//   a: {
+//     b: {
+//       x: 1,
+//       y: 20,
+//       z: 30
+//     },
+//     c: 2
+//   },
+//   d: {e: 3}
+// }
+
+appendInPlace('a.b', {y: 20, z: 30}, {})
+// => {a: {b: {y: 20, z: 30}}}
+```
