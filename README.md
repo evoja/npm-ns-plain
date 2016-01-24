@@ -1,4 +1,4 @@
-# ns-plain [![npm version](https://badge.fury.io/js/%40evoja%2Fns-plain.svg)](https://badge.fury.io/js/%40evoja%2Fns-plain) [![Build Status](https://travis-ci.org/evoja/ns-plain.png)](https://travis-ci.org/evoja/ns-plain)
+# ns-plain [![npm version](https://badge.fury.io/js/%40evoja%2Fns-plain.svg)](https://badge.fury.io/js/%40evoja%2Fns-plain) [![Build Status](https://travis-ci.org/evoja/npm-ns-plain.png)](https://travis-ci.org/evoja/npm-ns-plain)
 
 
 
