@@ -1,6 +1,6 @@
 {
   "name": "@evoja/ns-plain",
-  "version": "0.0.0",
+  "version": "0.0.1-s0",
   "license": "MIT",
   "repository": "git@github.com:evoja/npm-ns-plain.git",
 
@@ -18,22 +18,16 @@
     "just-test": "nodeunit out/tests",
 
     "prebrowserify": "npm run build",
-    "browserify": "browserify \"lib/for-browser.js\" > out/redux-actions.js",
+    "browserify": "browserify -t require-globify \"lib/for-browser.js\" > out/redux-actions.js",
 
     "prebuild-browser-test": "npm run build-tests && mkdir -p out/test",
-    "build-browser-test": "browserify -d \"out/test-browser.js\" > out/test/index.js",
+    "build-browser-test": "browserify -t require-globify -d \"out/test-browser.js\" > out/test/index.js",
     "postbuild-browser-test": "copyfiles -u 1 test/index.html out/test"
   },
 
   "babel": {
     "presets": ["es2015"],
     "plugins": ["transform-object-rest-spread"]
-  },
-
-  "browserify": {
-    "transform": [
-      ["require-globify"]
-    ]
   },
 
   "//devDependencies": {
