@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 #### [Unreleased][unreleased]
 ##### Added
-* fdsafasd
+* Escaping periods with slashes in keys. Slashes are need to be escaped as well. Two new public functions `escapeKey` and `unescapeKey` were added.
 
 ### 0.0
 

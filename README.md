@@ -1,8 +1,11 @@
 # ns-plain [![npm version](https://badge.fury.io/js/%40evoja%2Fns-plain.svg)](https://badge.fury.io/js/%40evoja%2Fns-plain) [![Build Status](https://travis-ci.org/evoja/npm-ns-plain.png)](https://travis-ci.org/evoja/npm-ns-plain)
 
+## How to use
+```js
+import {namespace, access, assignInPlace,
+    appendInPlace, assign, escapeKey, unescapeKey} from '@evoja/ns-plain'
 
-
-
+## Functions
 
 ### assign
 `assign(path_to_subobj, obj, value)`
@@ -116,3 +119,30 @@ appendInPlace('a.b',
 appendInPlace('a.b', {y: 20, z: 30}, {})
 // => {a: {b: {y: 20, z: 30}}}
 ```
+
+
+## Escaping periods
+
+To escape periods and slashes in key names use slashes:
+
+```js
+access('a.b\\.\\\\', {a: {'b.\\': 1, c: 2}})
+// => 1
+```
+
+### escapeKey
+```js
+escapeKey('.')         // -> '\\.'
+escapeKey('\\')        // -> '\\\\'
+escapeKey('\\...\\\\') // -> '\\\\\\.\\.\\.\\\\\\\\'
+```
+
+### unescapeKey
+```js
+unescapeKey('\\.')    // -> '.'
+unescapeKey('\\\\')   // -> '\\'
+unescapeKey('\\')     // -> '\\'
+unescapeKey('.')      // -> '.'
+unescapeKey('\\\\\\.\\.\\.\\\\\\\\') // -> '\\...\\\\'
+```
+

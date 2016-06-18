@@ -13,6 +13,13 @@ exports.test_namespace = function(test) {
 
   var y = namespace('a', obj)
   test.strictEqual(y, obj.a)
+
+
+  var obj = {}
+  var z = namespace('a.b\\.\\\\.d', obj)
+  test.deepEqual(obj, {a:{'b.\\':{d: {}}}})
+  test.strictEqual(obj.a['b.\\'].d, z)
+
   test.done()
 }
 
@@ -77,6 +84,13 @@ exports.test_access = function(test) {
   test.deepEqual(obj, {})
   test.strictEqual(z, undefined)
   test.strictEqual(access('x.y'), undefined)
+
+  var obj = {a: {'b.\\': {c: 10}}}
+  var z = access('a.b\\.\\\\.c', obj)
+  test.deepEqual(obj, {a: {'b.\\': {c: 10}}})
+  test.strictEqual(z, 10)
+  test.strictEqual(access('a.b\\.\\\\.c'), undefined)
+
   test.done()
 }
 
@@ -89,15 +103,24 @@ exports.test_assign = function(test) {
   test.deepEqual(result, {m: 1, n: 1, o: [1, 20, 3]})
   test.ok(Array.isArray(result.o))
   test.deepEqual(obj, {m: 1, n: 1, o: [1, 2, 3]}, 'obj must not be changed')
+
+  var result1 = assign('m.n\\..k', obj, 2)
+  test.deepEqual(result1, {m: {'n.': {k: 2}}, n: 1, o: [1, 2, 3]})
+  test.deepEqual(obj, {m: 1, n: 1, o: [1, 2, 3]}, 'obj must not be changed')
+  test.strictEqual(result1.m['n.'].k, 2)
+
   test.done()
 }
 
 exports.test_assignInPlace = function(test) {
   var obj = {}
   assignInPlace('a.b.c', 10, obj)
-  test.equal(obj.a.b.c, 10)
+  test.strictEqual(obj.a.b.c, 10)
   assignInPlace('a.b.c', 20, obj)
-  test.equal(obj.a.b.c, 20)
+  test.strictEqual(obj.a.b.c, 20)
+  assignInPlace('k.m\\..n', 30, obj)
+  test.strictEqual(obj.k['m.'].n, 30)
+  test.deepEqual(obj, {a: {b: {c: 20}}, k: {'m.': {n: 30}}})
   test.done()
 }
 
@@ -149,6 +172,10 @@ exports.test_appendInPlace = function(test) {
   test.deepEqual(obj.a.b.c, {d: 5, e: 10})
   appendInPlace('a.b.c', {e: 20, f: 30}, obj)
   test.deepEqual(obj.a.b.c, {d: 5, e: 20, f: 30})
+  test.throws(() => appendInPlace('a.b.c', 30, obj), Error)
+  appendInPlace('a.b.c\\.', {x: 1, y: 2}, obj)
+  test.deepEqual(obj.a.b['c.'], {x: 1, y: 2})
+  test.deepEqual(obj.a.b, {c: {d: 5, e: 20, f: 30}, 'c.': {x: 1, y: 2}})
   test.done()
 }
 
