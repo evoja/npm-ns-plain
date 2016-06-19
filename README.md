@@ -4,6 +4,7 @@
 ```js
 import {namespace, access, assignInPlace,
     appendInPlace, assign, escapeKey, unescapeKey} from '@evoja/ns-plain'
+```
 
 ## Functions
 
