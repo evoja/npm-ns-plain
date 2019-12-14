@@ -1,12 +1,14 @@
 'use strict'
-
-var tl = require('../test-lib.js')
-var {namespace, access, assign, assignInPlace, appendInPlace,
+import {Test} from 'nodeunit'
+import {namespace, access, assign, assignInPlace, appendInPlace,
     setMockIsBrowser
-  } = tl.require('ns.js')
+  } from '../../src/ns'
 
-exports.test_namespace = function(test) {
-  var obj = {}
+declare const global:any
+declare const window:any
+
+export function test_namespace(test:Test) {
+  var obj:any = {}
   var x = namespace('a.b', obj)
   test.deepEqual(obj, {a:{b:{}}})
   test.strictEqual(obj.a.b, x)
@@ -15,7 +17,7 @@ exports.test_namespace = function(test) {
   test.strictEqual(y, obj.a)
 
 
-  var obj = {}
+  var obj:any = {}
   var z = namespace('a.b\\.\\\\.d', obj)
   test.deepEqual(obj, {a:{'b.\\':{d: {}}}})
   test.strictEqual(obj.a['b.\\'].d, z)
@@ -23,8 +25,8 @@ exports.test_namespace = function(test) {
   test.done()
 }
 
-exports.test_namespaceToContext = function(test) {
-  var obj = {m: {n: 3}}
+export function test_namespaceToContext(test:Test) {
+  var obj:any = {m: {n: 3}}
   var x = namespace('a.b.c', obj)
   x.d = 5
   var y = namespace('a.b.c', obj)
@@ -37,7 +39,7 @@ exports.test_namespaceToContext = function(test) {
   test.done()
 }
 
-exports.namespaceRequiresBrowser = function(test) {
+export function namespaceRequiresBrowser(test:Test) {
   if (typeof window !== 'undefined') {
     test.done()
     return
@@ -46,7 +48,7 @@ exports.namespaceRequiresBrowser = function(test) {
   test.done()
 }
 
-exports.namespaceWorksWithMockIsBrowser_server = function(test) {
+export function namespaceWorksWithMockIsBrowser_server(test:Test) {
   if (typeof window !== 'undefined') {
     test.done()
     return
@@ -62,7 +64,7 @@ exports.namespaceWorksWithMockIsBrowser_server = function(test) {
   test.done();
 };
 
-exports.namespaceWorksInBrowser_browser = function(test) {
+export function namespaceWorksInBrowser_browser(test:Test) {
   if (typeof window === 'undefined') {
     test.done()
     return
@@ -78,14 +80,14 @@ exports.namespaceWorksInBrowser_browser = function(test) {
 
 
 
-exports.test_access = function(test) {
+export function test_access(test:Test) {
   var obj = {}
   var z = access('x.y', obj)
   test.deepEqual(obj, {})
   test.strictEqual(z, undefined)
   test.strictEqual(access('x.y'), undefined)
 
-  var obj = {a: {'b.\\': {c: 10}}}
+  obj = {a: {'b.\\': {c: 10}}}
   var z = access('a.b\\.\\\\.c', obj)
   test.deepEqual(obj, {a: {'b.\\': {c: 10}}})
   test.strictEqual(z, 10)
@@ -94,7 +96,7 @@ exports.test_access = function(test) {
   test.done()
 }
 
-exports.test_assign = function(test) {
+export function test_assign(test:Test) {
   var obj = {m: 1, n: 1, o: [1, 2, 3]}
   test.deepEqual({m: 2, n: 1, o: [1, 2, 3]}, assign('m', obj, 2))
   test.deepEqual(obj, {m: 1, n: 1, o: [1, 2, 3]}, 'obj must not be changed')
@@ -112,8 +114,8 @@ exports.test_assign = function(test) {
   test.done()
 }
 
-exports.test_assignInPlace = function(test) {
-  var obj = {}
+export function test_assignInPlace(test:Test) {
+  var obj:any = {}
   assignInPlace('a.b.c', 10, obj)
   test.strictEqual(obj.a.b.c, 10)
   assignInPlace('a.b.c', 20, obj)
@@ -124,7 +126,7 @@ exports.test_assignInPlace = function(test) {
   test.done()
 }
 
-exports.test_assignInPlace_server = function(test) {
+export function test_assignInPlace_server(test:Test) {
   if (typeof window !== 'undefined') {
     test.done()
     return
@@ -148,7 +150,7 @@ exports.test_assignInPlace_server = function(test) {
   test.done()
 }
 
-exports.test_assignInPlace_browser = function(test) {
+export function test_assignInPlace_browser(test:Test) {
   if (typeof window === 'undefined') {
     test.done()
     return
@@ -166,8 +168,8 @@ exports.test_assignInPlace_browser = function(test) {
 }
 
 
-exports.test_appendInPlace = function(test) {
-  var obj = {}
+export function test_appendInPlace(test:Test) {
+  var obj:any = {}
   appendInPlace('a.b.c', {d: 5, e: 10}, obj)
   test.deepEqual(obj.a.b.c, {d: 5, e: 10})
   appendInPlace('a.b.c', {e: 20, f: 30}, obj)
@@ -179,7 +181,7 @@ exports.test_appendInPlace = function(test) {
   test.done()
 }
 
-exports.test_appendInPlace_server = function(test) {
+export function test_appendInPlace_server(test:Test) {
   if (typeof window !== 'undefined') {
     test.done()
     return
@@ -203,7 +205,7 @@ exports.test_appendInPlace_server = function(test) {
   test.done()
 }
 
-exports.test_appendInPlace_browser = function(test) {
+export function test_appendInPlace_browser(test:Test) {
   if (typeof window === 'undefined') {
     test.done()
     return

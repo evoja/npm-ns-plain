@@ -1,62 +1,32 @@
 {
   "name": "@evoja/ns-plain",
-  "version": "0.0.2",
+  "version": "0.1.0-s1",
   "license": "MIT",
   "repository": "git@github.com:evoja/npm-ns-plain.git",
 
   "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "files": ["lib"],
 
   "scripts": {
     "mypublish": "npm test && npm publish --access public",
 
     "clean": "rm -rf lib && rm -rf out",
-    "build": "babel src --out-dir lib && mkdir -p out",
-    "build-tests": "npm run build && copyfiles -u 1 lib/**/*.js out && babel test --out-dir out",
-    "watch": "babel src test --watch --out-dir out --source-maps",
+    "build": "tsc -p src --outDir lib",
+    "build-tests": "tsc -p test --outDir out",
+    "watch": "tsc -p test --watch --out-dir out",
     "test": "npm run clean && npm run build-tests && npm run just-test",
-    "just-test": "nodeunit out/tests",
-
-    "prebrowserify": "npm run build",
-    "browserify": "browserify -t require-globify \"lib/for-browser.js\" > out/redux-actions.js",
-
-    "prebuild-browser-test": "npm run build-tests && mkdir -p out/test",
-    "build-browser-test": "browserify -t require-globify -d \"out/test-browser.js\" > out/test/index.js",
-    "postbuild-browser-test": "copyfiles -u 1 test/index.html out/test"
+    "just-test": "nodeunit out/test/tests"
   },
-
-  "babel": {
-    "presets": ["es2015"],
-    "plugins": ["transform-object-rest-spread"]
-  },
-
   "//devDependencies": {
-    "//": "Build purposes",
-    "babel-cli": "Compile es6 -> es5",
-    "babel-preset-es2015": "Compile es6 -> es5",
-    "babel-plugin-transform-object-rest-spread": "6.2",
-
     "//": "Testing purposes",
-    "nodeunit": "Test runner",
-    "babel-register": "Transform files to test in console",
-    "copyfiles": "Cross-OS version of copy",
-
-    "//": "I want to test it in IE9",
-    "browserify": "Prepare to test in a browser",
-    "require-globify": "Prepare to test in a browser"
+    "nodeunit": "Test runner"
   },
 
   
   "devDependencies": {
-    "babel-cli": "6.10.1",
-    "babel-preset-es2015": "6.9.0",
-    "babel-plugin-transform-object-rest-spread": "6.8.0",
-
-    "nodeunit": "0.9.1",
-    "babel-register": "6.9.0",
-    "copyfiles": "0.2.1",
-
-    "browserify": "13.0.1",
-    "require-globify": "1.4.0"
+    "typescript": "3.7.3",
+    "nodeunit": "0.11.3",
+    "@types/nodeunit": "0.0.30"
   }
 }

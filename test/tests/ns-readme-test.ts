@@ -1,14 +1,17 @@
 'use strict';
-var tl = require('../test-lib.js')
 
-var {namespace, assign, access, setMockIsBrowser,
-  assignInPlace, appendInPlace} = tl.require('ns.js')
+import {Test} from 'nodeunit'
+import {namespace, assign, access, setMockIsBrowser,
+  assignInPlace, appendInPlace} from '../../src/ns'
 
 
 
-exports.test_assign = function(test) {
-  var obj = {a: {b: 1, c: 2}, d: {e: 3}}
-  var origObj = {a: {b: 1, c: 2}, d: {e: 3}}
+declare const global:any
+declare const window:any
+
+export function test_assign(test:Test) {
+  var obj:any = {a: {b: 1, c: 2}, d: {e: 3}}
+  var origObj:any = {a: {b: 1, c: 2}, d: {e: 3}}
   var result = assign('a.b', obj, 100)
 
   test.deepEqual(result,
@@ -35,7 +38,7 @@ exports.test_assign = function(test) {
   test.done()
 }
 
-exports.test_access = function(test) {
+export function test_access(test:Test) {
   test.equal(access('a.b', {a: {b: 1, c: 2}}), 1)
 
   var obj = {}
@@ -46,7 +49,7 @@ exports.test_access = function(test) {
   test.done()
 }
 
-exports.test_namespace = function(test) {
+export function test_namespace(test:Test) {
   var obj = {}
   var res2 = namespace('a.b', obj)
   test.equal(typeof res2, 'object')
@@ -55,7 +58,7 @@ exports.test_namespace = function(test) {
   test.done()
 }
 
-exports.test_namespace_server = function(test) {
+export function test_namespace_server(test:Test) {
   if(typeof window !== 'undefined') {
     test.done()
     return
@@ -79,7 +82,7 @@ exports.test_namespace_server = function(test) {
 }
 
 
-exports.test_namespace_browser = function(test) {
+export function test_namespace_browser(test:Test) {
   if(typeof window === 'undefined') {
     test.done()
     return
@@ -94,9 +97,9 @@ exports.test_namespace_browser = function(test) {
 }
 
 
-exports.test_assign_in_place = function(test) {
-  var obj = {a: {b: 1, c: 2}, d: {e: 3}}
-  var origObj = {a: {b: 1, c: 2}, d: {e: 3}}
+export function test_assign_in_place(test:Test) {
+  var obj:any = {a: {b: 1, c: 2}, d: {e: 3}}
+  var origObj:any = {a: {b: 1, c: 2}, d: {e: 3}}
   var result = assignInPlace('a.b', 100, obj)
 
   test.strictEqual(result, undefined)
@@ -120,9 +123,9 @@ exports.test_assign_in_place = function(test) {
   test.done()
 }
 
-exports.test_append_in_place = function(test) {
-  var obj = {a: {b: {x: 1, y: 2}, c: 2}, d: {e: 3}}
-  var origObj = {a: {b: {x: 1, y: 2}, c: 2}, d: {e: 3}}
+export function test_append_in_place(test:Test) {
+  var obj:any = {a: {b: {x: 1, y: 2}, c: 2}, d: {e: 3}}
+  var origObj:any = {a: {b: {x: 1, y: 2}, c: 2}, d: {e: 3}}
   var result = appendInPlace('a.b', {y: 20, z: 30}, obj)
 
   test.strictEqual(result, undefined)

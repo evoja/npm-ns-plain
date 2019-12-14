@@ -1,23 +1,24 @@
 'use strict'
 import {unescapeKey, indexOfPeriod, lastIndexOfPeriod} from './keys'
-var me = module.exports
-var mockIsBrowser = undefined; 
+declare const global:undefined|object
 
-function isBrowser() {
+var mockIsBrowser:undefined|boolean = undefined;
+
+function isBrowser():boolean|undefined {
   return typeof window !== 'undefined' || mockIsBrowser
 }
 
-function getGlobal() {
-  return typeof window !== 'undefined' && window || global
+function getGlobal():any {
+  return typeof window !== 'undefined' && window || (global as any)
 }
 
-function throwIfNotContextNorBrowser(context) {
+function throwIfNotContextNorBrowser(context:any):void {
   if (!isBrowser() && !context) {
     throw new Error('Must run in browser or have non-null context');
   }
 }
 
-function rawNamespace(name, context, doNotCreate) {
+function rawNamespace(name:string, context:any, doNotCreate?:boolean):undefined|any {
   throwIfNotContextNorBrowser(context)
   var prevIndex = 0;
   var nextIndex = indexOfPeriod(name, 0)
@@ -56,7 +57,7 @@ function rawNamespace(name, context, doNotCreate) {
 /**
  * Emulates browser for testing purposes when we want to test undefined context in node environment
  */
-me.setMockIsBrowser = function setMockIsBrowser(isBrowser) {
+export function setMockIsBrowser(isBrowser:boolean):void {
   mockIsBrowser = isBrowser
 }
 
@@ -65,7 +66,7 @@ me.setMockIsBrowser = function setMockIsBrowser(isBrowser) {
  * If sub-object does not exist it creates all necessary chain of sub-objects.
  * Always returns non-undefined.
  */
-me.namespace = function namespace(name, context) {
+export function namespace(name:string, context?:any):any {
   return rawNamespace(name, context)
 }
 
@@ -78,7 +79,7 @@ me.namespace = function namespace(name, context) {
  *
  * Does not modifies context
  */
-me.access = function access(name, parent) {
+export function access(name:string, parent?:any):any {
   var prevIndex = 0;
   var nextIndex = indexOfPeriod(name, 0)
 
@@ -107,7 +108,7 @@ me.access = function access(name, parent) {
  * Creates all necessary sub-objects.
  * Fails if any sub-value in chain is not an object
  */
-me.assignInPlace = function assignInPlace(name, val, context) {
+export function assignInPlace(name:string, val:any, context?:any):any {
   throwIfNotContextNorBrowser(context)
   context = context || getGlobal()
   var index = lastIndexOfPeriod(name)
@@ -117,27 +118,27 @@ me.assignInPlace = function assignInPlace(name, val, context) {
     var ns = name.substring(0, index)
     var field = name.substring(index + 1)
     field = unescapeKey(field)
-    me.namespace(ns, context)[field] = val
+    namespace(ns, context)[field] = val
   }
 }
 
-/** 
-  * Appends new fields to namespace `name`. 
-  * 
+/**
+  * Appends new fields to namespace `name`.
+  *
   * By default uses as context `window` in browser.
   * On the server the context must be specified.
-  * 
-  * Takes `obj` as set of `keys -> vals`. 
-  * Adds all `vals` with `keys` to the namespace. 
-  * 
-  * If `name` does not exist it creates it with `namespace()`. 
-  */ 
-me.appendInPlace = function appendInPlace(name, obj, context) {
+  *
+  * Takes `obj` as set of `keys -> vals`.
+  * Adds all `vals` with `keys` to the namespace.
+  *
+  * If `name` does not exist it creates it with `namespace()`.
+  */
+export function appendInPlace(name:string, obj:any, context?:any):any {
   throwIfNotContextNorBrowser(context)
   if (typeof obj !== 'object') {
     throw new Error('The second argument must be an object')
   }
-  var ns = me.namespace(name, context || getGlobal())
+  var ns = namespace(name, context || getGlobal())
   for (var key in obj) {
     ns[key] = obj[key];
   }
@@ -150,7 +151,7 @@ me.appendInPlace = function appendInPlace(name, obj, context) {
  *
  * Does not change the `parent` object.
  */
-me.assign = function assign(name, parent, value) {
+export function assign(name:string, parent:any, value:any):any {
   name = typeof name == 'string' ? name : '' + name
   var dotIndex = indexOfPeriod(name)
   var field = dotIndex < 0 ? name : name.substring(0, dotIndex)

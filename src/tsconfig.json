@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "target": "es6",
+    "declaration": true,
+  },
+  "awesomeTypescriptLoaderOptions": {
+    "useCache": true,
+    "cacheDirectory": "./out/typescript-awcache",
+  }
+}
