@@ -1,8 +1,9 @@
 'use strict'
 import {unescapeKey, indexOfPeriod, lastIndexOfPeriod} from './keys'
-declare const global:unknown
+declare const global:typeof globalThis
 
-type TContext = unknown[] | {[key:string]:unknown} | undefined
+type NsVal = NsContext|undefined|null|boolean|number|string|symbol|bigint|Function
+type NsContext = NsVal[] | {[key in string|number|symbol]:NsVal} | undefined
 
 let mockIsBrowser:undefined|boolean = undefined
 
@@ -10,8 +11,8 @@ function isBrowser():boolean|undefined {
   return typeof window !== 'undefined' || mockIsBrowser
 }
 
-function getGlobal():undefined|TContext {
-  return typeof window !== 'undefined' && window || (global as undefined|TContext)
+function getGlobal():undefined|NsContext {
+  return typeof window !== 'undefined' ? window as any : global as any
 }
 
 function throwIfNotContextNorBrowser(context:unknown):void {
@@ -20,11 +21,11 @@ function throwIfNotContextNorBrowser(context:unknown):void {
   }
 }
 
-function rawNamespace(name:string, context:undefined|TContext, doNotCreate?:boolean):unknown {
+function rawNamespace(name:string, context:undefined|NsContext, doNotCreate?:boolean):NsVal {
   throwIfNotContextNorBrowser(context)
   let prevIndex = 0;
   let nextIndex = indexOfPeriod(name, 0)
-  let parent:any = context || getGlobal()
+  let parent:NsVal = context || getGlobal()
   let walkedPath = ''
 
   if (!parent) {
@@ -40,15 +41,32 @@ function rawNamespace(name:string, context:undefined|TContext, doNotCreate?:bool
       : name.substring(prevIndex)
     )
 
-    if (typeof parent !== 'object' && !parent) {
-      throw new TypeError(`Cannot create property '${key}' on ${typeof parent} '${parent}' under the path '${walkedPath}'`)
+    if (!parent) {
+      throw new TypeError(`Deny creating of property '${key}' on ${typeof parent} '${String(parent)}' under the path '${walkedPath}'`)
+    }
+    if (typeof parent !== 'object') {
+      if (!parent.hasOwnProperty(key)) {
+        throw new TypeError(`Deny creating of property '${key}' on ${typeof parent} '${String(parent)}' under the path '${walkedPath}'`)
+      }
+      parent = (parent as any)[key]
+    } else if (Array.isArray(parent) && parent.hasOwnProperty(key)) {
+      parent = (parent as any)[key]
+    } else if (Array.isArray(parent)) {
+      const numKey = Number(key)
+      if (isNaN(numKey) || numKey < 0) {
+        throw new TypeError(`Deny creating of property '${key}' on array under the path '${walkedPath}'`)
+      }
+      if ((parent[numKey] === undefined || parent[numKey] === null) && !doNotCreate) {
+        parent[numKey] = {}
+      }
+      parent = parent[numKey];
+    } else {
+      if ((parent[key] === undefined || parent[key] === null) && !doNotCreate) {
+        parent[key] = {}
+      }
+      parent = parent[key];
     }
     walkedPath = walkedPath ? walkedPath + '.' + key : key
-
-    if ((parent[key] === undefined || parent[key] === null) && !doNotCreate) {
-      parent[key] = {}
-    }
-    parent = parent[key];
     prevIndex = nextIndex + 1;
   }
   while(nextIndex >= 0);
@@ -71,7 +89,7 @@ function setMockIsBrowser(isBrowser:boolean):void {
  * If sub-object does not exist it creates all necessary chain of sub-objects.
  * Always returns non-undefined.
  */
-function namespace(name:string, context?:TContext):unknown {
+function namespace(name:string, context?:NsContext):NsVal {
   return rawNamespace(name, context)
 }
 
@@ -84,10 +102,9 @@ function namespace(name:string, context?:TContext):unknown {
  *
  * Does not modifies context
  */
-function access(name:string, parent?:TContext):unknown {
+function access(name:string, parent?:NsVal):NsVal {
   let prevIndex = 0;
   let nextIndex = indexOfPeriod(name, 0)
-  let walkedPath = ''
 
   do
   {
@@ -98,16 +115,11 @@ function access(name:string, parent?:TContext):unknown {
       : name.substring(prevIndex)
     )
 
-    if (typeof parent !== 'object' && typeof parent !== 'undefined') {
-      throw new TypeError(`Cannot create property '${key}' on ${typeof parent} '${parent}' under the path '${walkedPath}'`)
-    }
-    walkedPath = walkedPath ? walkedPath + '.' + key : key
-
     if (!parent) {
       return undefined
     }
 
-    parent = (parent as any)[key] as any
+    parent = (parent as any)[key as any]
     prevIndex = nextIndex + 1;
   }
   while(nextIndex >= 0);
@@ -120,7 +132,7 @@ function access(name:string, parent?:TContext):unknown {
  * Creates all necessary sub-objects.
  * Fails if unknown sub-value in chain is not an object
  */
-function assignInPlace(name:string, val:unknown, context?:TContext):void {
+function assignInPlace(name:string, val:NsVal, context?:NsContext):void {
   throwIfNotContextNorBrowser(context)
   context = context || getGlobal()
   if (!context) {
@@ -133,7 +145,18 @@ function assignInPlace(name:string, val:unknown, context?:TContext):void {
   } else {
     const ns = name.substring(0, index)
     const field = unescapeKey(name.substring(index + 1))
-    ;(namespace(ns, context) as any)[field] = val
+    const obj = namespace(ns, context)
+    if (typeof obj !== 'object' || !obj) {
+      throw new TypeError(`Deny creating of property '${field}' on ${typeof obj} '${String(obj)}' under the path '${ns}'`)
+    } else if (Array.isArray(obj)) {
+      const numKey = Number(field)
+      if (isNaN(numKey) || numKey < 0) {
+        throw new TypeError(`Deny creating of property '${field}' on array under the path '${ns}'`)
+      }
+      obj[numKey] = val
+    } else {
+      obj[field] = val
+    }
   }
 }
 
@@ -148,17 +171,70 @@ function assignInPlace(name:string, val:unknown, context?:TContext):void {
   *
   * If `name` does not exist it creates it with `namespace()`.
   */
-function appendInPlace(name:string, obj:TContext, context?:TContext):void {
+function appendInPlace(name:string, vals:NsContext, context?:NsContext):void {
   throwIfNotContextNorBrowser(context)
-  if (typeof obj !== 'object' || obj === null) {
+  if (typeof vals !== 'object' || vals === null) {
     throw new Error('The second argument must be an object')
   }
-  const ns = namespace(name, context || getGlobal()) as any
-  for (const key in obj) {
-    ns[key] = (obj as any)[key]
+  const obj = namespace(name, context || getGlobal())
+  if (typeof obj !== 'object' || !obj) {
+    throw new TypeError(`Deny creating of properties on ${typeof obj} '${String(obj)}' under the path '${name}'`)
+  } else if (Array.isArray(obj)) {
+    for (const key in vals) {
+      const numKey = Number(key)
+      if (isNaN(numKey) || numKey < 0) {
+        throw new TypeError(`Deny creating of property '${key}' on array under the path '${name}'`)
+      }
+      obj[numKey] = vals[key]
+    }
+  } else {
+    for (const key in vals) {
+      obj[key] = vals[key]
+    }
   }
 }
 
+function assignRaw<T extends NsVal>(name: string, parent: T, value:NsVal, walkedPath:string):T {
+  const dotIndex = indexOfPeriod(name)
+  const field = unescapeKey(dotIndex < 0 ? name : name.substring(0, dotIndex))
+
+  if (typeof parent !== 'object' && parent !== undefined) {
+    throw new TypeError(`Deny creating of property '${field}' on ${typeof parent} '${String(parent)}' under the path '${walkedPath}'`)
+  } else if (Array.isArray(parent)) {
+    const numKey = Number(field)
+    if (isNaN(numKey) || numKey < 0) {
+      throw new TypeError(`Deny creating of property '${field}' on array under the path '${walkedPath}'`)
+    }
+
+    const replacedValue:NsVal = parent && parent[numKey]
+    const wp = walkedPath ? walkedPath + '.' + field : field
+    const replacingValue = dotIndex < 0
+      ? value
+      : assignRaw(name.substring(dotIndex + 1), replacedValue, value, wp)
+
+    if (replacingValue === replacedValue) {
+      return parent
+    } else {
+      const clone:any = parent.slice()
+      clone[numKey] = replacingValue
+      return clone
+    }
+  } else {
+    const replacedValue:NsVal = parent && parent[field]
+    const wp = walkedPath ? walkedPath + '.' + field : field
+    const replacingValue = dotIndex < 0
+      ? value
+      : assignRaw(name.substring(dotIndex + 1), replacedValue, value, wp)
+
+    if (replacingValue === replacedValue) {
+      return parent
+    } else {
+      const clone = {...(parent as any)}
+      clone[field] = replacingValue
+      return clone
+    }
+  }
+}
 
 /**
  * Readonly replace some deep field in object
@@ -166,22 +242,8 @@ function appendInPlace(name:string, obj:TContext, context?:TContext):void {
  *
  * Does not change the `parent` object.
  */
-function assign<T extends TContext>(name:string, parent:T, value:unknown):T {
-  name = typeof name == 'string' ? name : '' + name
-  const dotIndex = indexOfPeriod(name)
-  const field = unescapeKey(dotIndex < 0 ? name : name.substring(0, dotIndex))
-  const replacedValue = parent && (parent as any)[field] as TContext
-  const replacingValue = dotIndex < 0
-    ? value
-    : assign(name.substring(dotIndex + 1), replacedValue, value)
-
-  if (replacingValue === replacedValue) {
-    return parent
-  } else {
-    const clone:any = Array.isArray(parent) ? parent.slice() : {...parent}
-    clone[field] = replacingValue
-    return clone
-  }
+function assign<T extends NsContext>(name:string, parent:T, value:NsVal):T {
+  return assignRaw(name, parent, value, '')
 }
 
 const testingPurposes = {
@@ -189,7 +251,7 @@ const testingPurposes = {
 }
 
 export {
-  TContext,
+  NsContext as TNsContext,
 
   namespace,
   access,

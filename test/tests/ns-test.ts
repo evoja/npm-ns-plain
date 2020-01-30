@@ -1,12 +1,11 @@
 'use strict'
 
-
-// TODO: more strict type rules
 // TODO: blank paths
+// TODO: test functions
 
 import {Test} from 'nodeunit'
 import {namespace, access, assign, assignInPlace, appendInPlace,
-    testingPurposes, TContext,
+    testingPurposes,
 } from '../../src/ns'
 const {setMockIsBrowser} = testingPurposes
 declare const global:any
@@ -108,6 +107,13 @@ export function test_namespacesDoesNotCorruptArrays(test:Test) {
   test.ok(typeof w == 'object')
   test.deepEqual(v, {})
   test.ok(Array.isArray(obj.a))
+
+  test.throws(() => namespace('a.b', obj), TypeError)
+  test.throws(() => namespace('a.c.d.e', obj), TypeError)
+  test.strictEqual(namespace('a.length', obj), 4)
+  test.ok(Array.isArray(obj.a))
+
+  test.deepEqual(obj.a, [ 1, { b: { c: 5 } }, {}, { c: { d: {} } } ])
   test.done()
 }
 
@@ -117,7 +123,7 @@ export function test_namespaceForPrimitives(test:Test) {
     // bgnt: 1n,            // bigint is commented because target=es5
     // sym: Symbol('foo'),  // symbol is commented because target=es5
     bool: false,
-    str:'hello',
+    str: 'hello',
     nl: null,
     un: undefined
   }
@@ -125,12 +131,19 @@ export function test_namespaceForPrimitives(test:Test) {
   test.strictEqual(obj.nl, null)
 
   test.strictEqual(typeof namespace('num', obj), 'number')
+  test.strictEqual(namespace('num', obj), 1)
   // test.strictEqual(typeof namespace('bgnt', obj), 'bigint')
   // test.strictEqual(typeof namespace('sym', obj), 'symbol')
   test.strictEqual(typeof namespace('bool', obj), 'boolean')
+  test.strictEqual(namespace('bool', obj), false)
   test.strictEqual(typeof namespace('str', obj), 'string')
+  test.strictEqual(namespace('str', obj), 'hello')
   test.strictEqual(typeof namespace('nl', obj), 'object')
+  test.deepEqual(namespace('nl', obj), {})
   test.strictEqual(typeof namespace('un', obj), 'object')
+  test.deepEqual(namespace('un', obj), {})
+  test.strictEqual(typeof namespace('str.length', obj), 'number')
+  test.strictEqual(namespace('str.length', obj), 5)
 
   test.deepEqual(obj.nl, {})
   test.strictEqual(typeof obj.un, 'object')
@@ -188,6 +201,19 @@ export function test_accessDoesNotCorruptArrays(test:Test) {
   var w = access('a.3.c.d', obj)
   test.strictEqual(w, undefined)
   test.ok(Array.isArray(obj.a))
+
+  let r = access('a.b', obj) as any
+  test.strictEqual(r, undefined)
+  test.ok(Array.isArray(obj.a))
+
+  let t = access('a.c.d.e', obj)
+  test.strictEqual(t, undefined)
+  test.ok(Array.isArray(obj.a))
+
+  let s = access('a.length', obj) as any
+  test.strictEqual(s, 2)
+  test.ok(Array.isArray(obj.a))
+
   test.done()
 }
 
@@ -203,18 +229,25 @@ export function test_accessForPrimitives(test:Test) {
   }
 
   test.strictEqual(typeof access('num', obj), 'number')
+  test.strictEqual(access('num', obj), 1)
   // test.strictEqual(typeof access('bgnt', obj), 'bigint')
   // test.strictEqual(typeof access('sym', obj), 'symbol')
   test.strictEqual(typeof access('bool', obj), 'boolean')
+  test.strictEqual(access('bool', obj), false)
   test.strictEqual(typeof access('str', obj), 'string')
+  test.strictEqual(access('str', obj), 'hello')
   test.strictEqual(typeof access('nl', obj), 'object')
+  test.strictEqual(access('nl', obj), null)
   test.strictEqual(typeof access('un', obj), 'undefined')
+  test.strictEqual(access('un', obj), undefined)
+  test.strictEqual(typeof access('str.length', obj), 'number')
+  test.strictEqual(access('str.length', obj), 5)
 
-  test.throws(() => access('num.a', obj), TypeError)
-  // test.throws(() => access('bgnt.a', obj), TypeError)
-  // test.throws(() => access('sym.a', obj), TypeError)
-  test.throws(() => access('bool.a', obj), TypeError)
-  test.throws(() => access('str.a', obj), TypeError)
+  test.strictEqual(access('num.a', obj), undefined)
+  // test.strictEqual(access('bgnt.a', obj), undefined)
+  // test.strictEqual(access('sym.a', obj), undefined)
+  test.strictEqual(access('bool.a', obj), undefined)
+  test.strictEqual(access('str.a', obj), undefined)
   test.strictEqual(access('nl.b', obj), undefined)
   test.strictEqual(access('un.c', obj), undefined)
   test.deepEqual(obj, {num: 1, bool: false, str:'hello', nl: null, un: undefined})
@@ -223,7 +256,7 @@ export function test_accessForPrimitives(test:Test) {
 
 
 export function test_assign(test:Test) {
-  var obj = {m: 1, n: 1, o: [1, 2, 3]}
+  var obj:any = {m: 1, n: 1, o: [1, 2, 3]}
   test.deepEqual({m: 2, n: 1, o: [1, 2, 3]}, assign('m', obj, 2))
   test.deepEqual(obj, {m: 1, n: 1, o: [1, 2, 3]}, 'obj must not be changed')
 
@@ -232,10 +265,16 @@ export function test_assign(test:Test) {
   test.ok(Array.isArray(result.o))
   test.deepEqual(obj, {m: 1, n: 1, o: [1, 2, 3]}, 'obj must not be changed')
 
-  var result1 = assign('m.n\\..k', obj, 2) as any
-  test.deepEqual(result1, {m: {'n.': {k: 2}}, n: 1, o: [1, 2, 3]})
+  let result1 = assign('l', obj, 2) as any
+  test.deepEqual(result1, {m: 1, l: 2, n: 1, o: [1, 2, 3]})
   test.deepEqual(obj, {m: 1, n: 1, o: [1, 2, 3]}, 'obj must not be changed')
-  test.strictEqual(result1.m['n.'].k, 2)
+  test.strictEqual(result1.l, 2)
+
+
+  result1 = assign('n\\..k.c', obj, 2) as any
+  test.deepEqual(result1, {m: 1, 'n.': {k: {c: 2}}, n: 1, o: [1, 2, 3]})
+  test.deepEqual(obj, {m: 1, n: 1, o: [1, 2, 3]}, 'obj must not be changed')
+  test.strictEqual(result1['n.'].k.c, 2)
 
   test.done()
 }
@@ -276,18 +315,13 @@ export function test_assignDoesNotCorruptArrays(test:Test) {
   test.ok(Array.isArray(res.a))
   test.ok(Array.isArray(obj.a))
 
-  res = assign('a.b', obj, 10)
-  test.strictEqual(res.a[0], 1)
-  test.strictEqual(res.a[1], obj.a[1])
-  test.strictEqual(res.a.b, 10)
-  test.ok(Array.isArray(res.a))
+  test.throws(() => assign('a.b', obj, 10), TypeError)
   test.ok(Array.isArray(obj.a))
 
-  res = assign('a.c.d.e', obj, 10)
-  test.strictEqual(res.a[0], 1)
-  test.strictEqual(res.a[1], obj.a[1])
-  test.strictEqual(res.a.c.d.e, 10)
-  test.ok(Array.isArray(res.a))
+  test.throws(() => assign('a.c.d.e', obj, 10), TypeError)
+  test.ok(Array.isArray(obj.a))
+
+  test.throws(() => assign('a.length', obj, 10), TypeError)
   test.ok(Array.isArray(obj.a))
 
   test.done()
@@ -312,13 +346,13 @@ export function test_assignForPrimitives(test:Test) {
   test.strictEqual(assign('nl', obj, 'some').nl, 'some')
   test.strictEqual(assign('un', obj, 'other').un, 'other')
 
-  test.deepEqual(assign('num.a', obj, 1).num, {a:1})
+  test.throws(() => assign('num.a', obj, 1), TypeError)
   // test.throws(() => assign('bgnt.a', obj), TypeError)
   // test.throws(() => assign('sym.a', obj), TypeError)
-  test.deepEqual(assign('bool.b', obj, 2).bool, {b:2})
-  test.deepEqual(assign('str.c', obj, 3).str, {'0': 'h', '1': 'i', c:3})
-  test.deepEqual(assign('str.1', obj, 'o').str, 'ho')
-  test.deepEqual(assign('str.0', obj, 'f').str, 'fi')
+  test.throws(() => assign('bool.b', obj, 2), TypeError)
+  test.throws(() => assign('str.c', obj, 3), TypeError)
+  test.throws(() => assign('str.1', obj, 'o'), TypeError)
+  test.throws(() => assign('str.length', obj, 10).str, TypeError)
   test.deepEqual(assign('nl.d', obj, 4).nl, {d:4})
   test.deepEqual(assign('un.e', obj, 5).un, {e:5})
   test.done()
@@ -370,6 +404,17 @@ export function test_assignInPlaceDoesNotCorruptArrays(test:Test) {
   assignInPlace('a.3.c.d', 10, obj)
   test.strictEqual(obj.a[3].c.d, 10)
   test.ok(Array.isArray(obj.a))
+
+
+  test.throws(() => assignInPlace('a.b', 10, obj), TypeError)
+  test.ok(Array.isArray(obj.a))
+
+  test.throws(() => assignInPlace('a.c.d.e', 10, obj), TypeError)
+  test.ok(Array.isArray(obj.a))
+
+  test.throws(() => assignInPlace('a.length', 10, obj), TypeError)
+  test.ok(Array.isArray(obj.a))
+
   test.done()
 }
 
@@ -398,6 +443,7 @@ export function test_assignInPlaceForPrimitives(test:Test) {
   test.strictEqual(obj.nl, 'some')
   assignInPlace('un', 'other', obj)
   test.strictEqual(obj.un, 'other')
+  test.throws(() => assignInPlace('str.length', 10, obj), TypeError)
 
   test.deepEqual(obj, {
     num: 2,
@@ -497,9 +543,12 @@ export function test_appendInPlace(test:Test) {
 export function test_appendInPlaceDoesNotCorruptArrays(test:Test) {
   var obj:any = {a: [1, {b: {c: 5}}]}
   var x = {a:10}
-  appendInPlace('a', x, obj)
+  test.throws(() => appendInPlace('a', x, obj), TypeError)
   var y:any = [1, {b: {c: 5}}]
-  y.a = 10;
+  test.deepEqual(obj.a, y)
+
+  var u = {length:10}
+  test.throws(() => appendInPlace('a', u, obj), TypeError)
   test.deepEqual(obj.a, y)
 
   appendInPlace('a.1', x, obj)
@@ -575,6 +624,7 @@ export function test_appendInPlaceForPrimitives(test:Test) {
   // test.strictEqual(typeof appendInPlace('sym', obj), 'symbol')
   test.throws(() => appendInPlace('bool', {a:1}, obj), TypeError)
   test.throws(() => appendInPlace('str', {a:1}, obj), TypeError)
+  test.throws(() => appendInPlace('str', {length:1}, obj), TypeError)
   appendInPlace('nl', {a: 1}, obj)
   test.deepEqual(obj.nl, {a:1})
   test.strictEqual(obj.nl.a , 1)
