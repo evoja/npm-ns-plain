@@ -14,7 +14,7 @@
     "clean": "rm -rf lib && rm -rf out",
     "build": "tsc -p src --outDir lib",
     "build-tests": "tsc -p test --outDir out",
-    "watch": "tsc -p test --watch --out-dir out",
+    "watch": "tsc -p test --watch --outDir out",
     "test": "npm run clean && npm run build-tests && npm run just-test",
     "just-test": "nodeunit out/test/tests"
   },
@@ -23,7 +23,7 @@
     "nodeunit": "Test runner"
   },
 
-  
+
   "devDependencies": {
     "typescript": "3.7.3",
     "nodeunit": "0.11.3",

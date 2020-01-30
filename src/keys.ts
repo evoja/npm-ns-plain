@@ -15,7 +15,7 @@ function isEscaped(str:string, index:number):boolean {
   }
   return count % 2 == 1
 }
-export function indexOfPeriod(ns:string, start?:number) {
+export function indexOfPeriod(ns:string, start?:number):number {
   var index = ns.indexOf('.', start)
   while (index >= 0 && isEscaped(ns, index)) {
     index = ns.indexOf('.', index + 1)
@@ -23,7 +23,7 @@ export function indexOfPeriod(ns:string, start?:number) {
   return index
 }
 
-export function lastIndexOfPeriod(ns:string, start?:number) {
+export function lastIndexOfPeriod(ns:string, start?:number):number {
   var index = ns.lastIndexOf('.', start)
   while (index >= 0 && isEscaped(ns, index)) {
     index = ns.lastIndexOf('.', index - 1)

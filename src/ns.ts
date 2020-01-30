@@ -1,28 +1,31 @@
 'use strict'
 import {unescapeKey, indexOfPeriod, lastIndexOfPeriod} from './keys'
-declare const global:undefined|object
+declare const global:unknown
 
-var mockIsBrowser:undefined|boolean = undefined;
+type TContext = unknown[] | {[key:string]:unknown} | undefined
+
+let mockIsBrowser:undefined|boolean = undefined
 
 function isBrowser():boolean|undefined {
   return typeof window !== 'undefined' || mockIsBrowser
 }
 
-function getGlobal():any {
-  return typeof window !== 'undefined' && window || (global as any)
+function getGlobal():undefined|TContext {
+  return typeof window !== 'undefined' && window || (global as undefined|TContext)
 }
 
-function throwIfNotContextNorBrowser(context:any):void {
+function throwIfNotContextNorBrowser(context:unknown):void {
   if (!isBrowser() && !context) {
     throw new Error('Must run in browser or have non-null context');
   }
 }
 
-function rawNamespace(name:string, context:any, doNotCreate?:boolean):undefined|any {
+function rawNamespace(name:string, context:undefined|TContext, doNotCreate?:boolean):unknown {
   throwIfNotContextNorBrowser(context)
-  var prevIndex = 0;
-  var nextIndex = indexOfPeriod(name, 0)
-  var parent = context || getGlobal();
+  let prevIndex = 0;
+  let nextIndex = indexOfPeriod(name, 0)
+  let parent:any = context || getGlobal()
+  let walkedPath = ''
 
   if (!parent) {
     throw Error('Context is not defined and there isn\'t `window` nor `global` objects to set default context')
@@ -30,15 +33,17 @@ function rawNamespace(name:string, context:any, doNotCreate?:boolean):undefined|
 
   do
   {
-    if (!parent) {
-      return undefined
-    }
-
     nextIndex = indexOfPeriod(name, prevIndex)
-    var key = nextIndex >= 0
+    const key = unescapeKey(
+      nextIndex >= 0
       ? name.substring(prevIndex, nextIndex)
-      : name.substring(prevIndex);
-    key = unescapeKey(key)
+      : name.substring(prevIndex)
+    )
+
+    if (typeof parent !== 'object' && !parent) {
+      throw new TypeError(`Cannot create property '${key}' on ${typeof parent} '${parent}' under the path '${walkedPath}'`)
+    }
+    walkedPath = walkedPath ? walkedPath + '.' + key : key
 
     if ((parent[key] === undefined || parent[key] === null) && !doNotCreate) {
       parent[key] = {}
@@ -57,7 +62,7 @@ function rawNamespace(name:string, context:any, doNotCreate?:boolean):undefined|
 /**
  * Emulates browser for testing purposes when we want to test undefined context in node environment
  */
-export function setMockIsBrowser(isBrowser:boolean):void {
+function setMockIsBrowser(isBrowser:boolean):void {
   mockIsBrowser = isBrowser
 }
 
@@ -66,36 +71,43 @@ export function setMockIsBrowser(isBrowser:boolean):void {
  * If sub-object does not exist it creates all necessary chain of sub-objects.
  * Always returns non-undefined.
  */
-export function namespace(name:string, context?:any):any {
+function namespace(name:string, context?:TContext):unknown {
   return rawNamespace(name, context)
 }
 
 /**
  * Returns existing sub-object / sub-value of the context.
- * If sub-object or any of sub-objects from the chain does not exist
- * it returns undefined without creating anything.
+ * If sub-object or unknown of sub-objects from the chain does not exist
+ * it returns undefined without creating unknownthing.
  *
  * If context is not set it returns undefined.
  *
  * Does not modifies context
  */
-export function access(name:string, parent?:any):any {
-  var prevIndex = 0;
-  var nextIndex = indexOfPeriod(name, 0)
+function access(name:string, parent?:TContext):unknown {
+  let prevIndex = 0;
+  let nextIndex = indexOfPeriod(name, 0)
+  let walkedPath = ''
 
   do
   {
+    nextIndex = indexOfPeriod(name, prevIndex)
+    const key = unescapeKey(
+      nextIndex >= 0
+      ? name.substring(prevIndex, nextIndex)
+      : name.substring(prevIndex)
+    )
+
+    if (typeof parent !== 'object' && typeof parent !== 'undefined') {
+      throw new TypeError(`Cannot create property '${key}' on ${typeof parent} '${parent}' under the path '${walkedPath}'`)
+    }
+    walkedPath = walkedPath ? walkedPath + '.' + key : key
+
     if (!parent) {
       return undefined
     }
 
-    nextIndex = indexOfPeriod(name, prevIndex)
-    var key = nextIndex >= 0
-      ? name.substring(prevIndex, nextIndex)
-      : name.substring(prevIndex);
-    key = unescapeKey(key)
-
-    parent = parent[key];
+    parent = (parent as any)[key] as any
     prevIndex = nextIndex + 1;
   }
   while(nextIndex >= 0);
@@ -106,19 +118,22 @@ export function access(name:string, parent?:any):any {
 /**
  * Assigns sub-value under the `name` in the `context` to the `val`
  * Creates all necessary sub-objects.
- * Fails if any sub-value in chain is not an object
+ * Fails if unknown sub-value in chain is not an object
  */
-export function assignInPlace(name:string, val:any, context?:any):any {
+function assignInPlace(name:string, val:unknown, context?:TContext):void {
   throwIfNotContextNorBrowser(context)
   context = context || getGlobal()
-  var index = lastIndexOfPeriod(name)
+  if (!context) {
+    throw Error('Context is not defined and there isn\'t `window` nor `global` objects to set default context')
+  }
+
+  const index = lastIndexOfPeriod(name)
   if (index < 0) {
-    context[name] = val
+    ;(context as any)[name] = val
   } else {
-    var ns = name.substring(0, index)
-    var field = name.substring(index + 1)
-    field = unescapeKey(field)
-    namespace(ns, context)[field] = val
+    const ns = name.substring(0, index)
+    const field = unescapeKey(name.substring(index + 1))
+    ;(namespace(ns, context) as any)[field] = val
   }
 }
 
@@ -133,14 +148,14 @@ export function assignInPlace(name:string, val:any, context?:any):any {
   *
   * If `name` does not exist it creates it with `namespace()`.
   */
-export function appendInPlace(name:string, obj:any, context?:any):any {
+function appendInPlace(name:string, obj:TContext, context?:TContext):void {
   throwIfNotContextNorBrowser(context)
-  if (typeof obj !== 'object') {
+  if (typeof obj !== 'object' || obj === null) {
     throw new Error('The second argument must be an object')
   }
-  var ns = namespace(name, context || getGlobal())
-  for (var key in obj) {
-    ns[key] = obj[key];
+  const ns = namespace(name, context || getGlobal()) as any
+  for (const key in obj) {
+    ns[key] = (obj as any)[key]
   }
 }
 
@@ -151,22 +166,36 @@ export function appendInPlace(name:string, obj:any, context?:any):any {
  *
  * Does not change the `parent` object.
  */
-export function assign(name:string, parent:any, value:any):any {
+function assign<T extends TContext>(name:string, parent:T, value:unknown):T {
   name = typeof name == 'string' ? name : '' + name
-  var dotIndex = indexOfPeriod(name)
-  var field = dotIndex < 0 ? name : name.substring(0, dotIndex)
-  field = unescapeKey(field)
-  var replacedValue = parent && parent[field]
-  var replacingValue = dotIndex < 0
+  const dotIndex = indexOfPeriod(name)
+  const field = unescapeKey(dotIndex < 0 ? name : name.substring(0, dotIndex))
+  const replacedValue = parent && (parent as any)[field] as TContext
+  const replacingValue = dotIndex < 0
     ? value
     : assign(name.substring(dotIndex + 1), replacedValue, value)
 
   if (replacingValue === replacedValue) {
     return parent
   } else {
-    var clone = Array.isArray(parent) ? parent.slice() : {...parent}
+    const clone:any = Array.isArray(parent) ? parent.slice() : {...parent}
     clone[field] = replacingValue
     return clone
   }
 }
 
+const testingPurposes = {
+  setMockIsBrowser,
+}
+
+export {
+  TContext,
+
+  namespace,
+  access,
+  assignInPlace,
+  appendInPlace,
+  assign,
+
+  testingPurposes,
+}

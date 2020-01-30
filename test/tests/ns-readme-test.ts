@@ -1,9 +1,9 @@
 'use strict';
 
 import {Test} from 'nodeunit'
-import {namespace, assign, access, setMockIsBrowser,
+import {namespace, assign, access, testingPurposes,
   assignInPlace, appendInPlace} from '../../src/ns'
-
+const {setMockIsBrowser} = testingPurposes
 
 
 declare const global:any
