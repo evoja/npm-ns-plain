@@ -61,10 +61,10 @@ function rawNamespace(name:string, context:undefined|NsContext, doNotCreate?:boo
       }
       parent = parent[numKey];
     } else {
-      if ((parent[key] === undefined || parent[key] === null) && !doNotCreate) {
+      if ((!parent.hasOwnProperty(key) || parent[key] === undefined || parent[key] === null) && !doNotCreate) {
         parent[key] = {}
       }
-      parent = parent[key];
+      parent = parent.hasOwnProperty(key) ? parent[key] : undefined
     }
     walkedPath = walkedPath ? walkedPath + '.' + key : key
     prevIndex = nextIndex + 1;
@@ -119,7 +119,7 @@ function access(name:string, parent?:NsVal):NsVal {
       return undefined
     }
 
-    parent = (parent as any)[key as any]
+    parent = (parent as any).hasOwnProperty(key) ? (parent as any)[key as any] : undefined
     prevIndex = nextIndex + 1;
   }
   while(nextIndex >= 0);

@@ -1,7 +1,7 @@
 'use strict'
 
 // TODO: blank paths
-// TODO: test functions
+// TODO: test prototypes
 
 import {Test} from 'nodeunit'
 import {namespace, access, assign, assignInPlace, appendInPlace,
@@ -165,6 +165,23 @@ export function test_namespaceForPrimitives(test:Test) {
   test.done()
 }
 
+export function test_namespaceForFunctions(test:Test) {
+  var obj:any = {
+    sum: (a:number, b:number) => a + b,
+    square: (a: number) => a * a,
+    pi: () => Math.PI,
+  }
+
+  test.strictEqual(typeof namespace('sum', obj), 'function')
+  test.strictEqual(namespace('sum', obj), obj.sum)
+  test.strictEqual(typeof namespace('sum.name', obj), 'string')
+  test.strictEqual(namespace('sum.name', obj), 'sum')
+  test.strictEqual(typeof namespace('sum.length', obj), 'number')
+  test.strictEqual(namespace('sum.length', obj), 2)
+  test.throws(() => namespace('sum.bind', obj), TypeError)
+  test.throws(() => namespace('sum.a', obj), TypeError)
+  test.done()
+}
 
 export function test_access(test:Test) {
   var obj = {}
@@ -251,6 +268,24 @@ export function test_accessForPrimitives(test:Test) {
   test.strictEqual(access('nl.b', obj), undefined)
   test.strictEqual(access('un.c', obj), undefined)
   test.deepEqual(obj, {num: 1, bool: false, str:'hello', nl: null, un: undefined})
+  test.done()
+}
+
+export function test_accessForFunctions(test:Test) {
+  var obj:any = {
+    sum: (a:number, b:number) => a + b,
+    square: (a: number) => a * a,
+    pi: () => Math.PI,
+  }
+
+  test.strictEqual(typeof access('sum', obj), 'function')
+  test.strictEqual(access('sum', obj), obj.sum)
+  test.strictEqual(typeof access('sum.name', obj), 'string')
+  test.strictEqual(access('sum.name', obj), 'sum')
+  test.strictEqual(typeof access('sum.length', obj), 'number')
+  test.strictEqual(access('sum.length', obj), 2)
+  test.strictEqual(access('sum.bind', obj), undefined)
+  test.strictEqual(access('sum.a', obj), undefined)
   test.done()
 }
 
@@ -357,6 +392,22 @@ export function test_assignForPrimitives(test:Test) {
   test.deepEqual(assign('un.e', obj, 5).un, {e:5})
   test.done()
 }
+
+export function test_assignForFunctions(test:Test) {
+  var obj:any = {
+    sum: (a:number, b:number) => a + b,
+    square: (a: number) => a * a,
+    pi: () => Math.PI,
+  }
+
+  test.strictEqual(assign('sum', obj, 1).sum, 1)
+  test.throws(() => assign('sum.name', obj, 'hello'), TypeError)
+  test.throws(() => assign('sum.length', obj, 10), TypeError)
+  test.throws(() => assign('sum.bind', obj, ()=>{}), TypeError)
+  test.throws(() => assign('sum.a', obj, 4), TypeError)
+  test.done()
+}
+
 
 
 export function test_assignInPlace(test:Test) {
@@ -479,6 +530,25 @@ export function test_assignInPlaceForPrimitives(test:Test) {
   test.deepEqual(obj, {num: 1, bool: false, str:'hello', nl: {b:4}, un: {c:5}})
   test.done()
 }
+
+export function test_accessInPlaceForFunctions(test:Test) {
+  var obj:any = {
+    sum: (a:number, b:number) => a + b,
+    square: (a: number) => a * a,
+    pi: () => Math.PI,
+  }
+  var sum = obj.sum
+
+  assignInPlace('sum', 1, obj)
+  test.strictEqual(obj.sum, 1)
+  obj.sum = sum
+  test.throws(() => assignInPlace('sum.name', 'hello', obj), TypeError)
+  test.throws(() => assignInPlace('sum.length', 1, obj), TypeError)
+  test.throws(() => assignInPlace('sum.bind', ()=>{}, obj), TypeError)
+  test.throws(() => assignInPlace('sum.a', 1, obj), TypeError)
+  test.done()
+}
+
 
 export function test_assignInPlace_server(test:Test) {
   if (typeof window !== 'undefined') {
@@ -658,6 +728,30 @@ export function test_appendInPlaceForPrimitives(test:Test) {
   test.done()
 }
 
+export function test_appendInPlaceForFunctions(test:Test) {
+  var obj:any = {
+    x: {
+      sum: (a:number, b:number) => a + b,
+      square: (a: number) => a * a,
+      pi: () => Math.PI,
+    }
+  }
+  var sum = obj.x.sum
+
+  appendInPlace('x', {sum:1}, obj)
+  test.strictEqual(obj.x.sum, 1)
+  obj = obj.x
+  obj.sum = sum
+  test.throws(() => appendInPlace('sum', {name: 'hello'}, obj), TypeError)
+  test.throws(() => appendInPlace('sum', {length: 1}, obj), TypeError)
+  test.throws(() => appendInPlace('sum', {bind: ()=>{}}, obj), TypeError)
+  test.throws(() => appendInPlace('sum', {a: 10}, obj), TypeError)
+  test.throws(() => appendInPlace('sum.name', {a: 10}, obj), TypeError)
+  test.throws(() => appendInPlace('sum.length', {a: 10}, obj), TypeError)
+  test.throws(() => appendInPlace('sum.bind', {a: 10}, obj), TypeError)
+  test.throws(() => appendInPlace('sum.a', {a: 10}, obj), TypeError)
+  test.done()
+}
 
 export function test_appendInPlace_server(test:Test) {
   if (typeof window !== 'undefined') {
