@@ -41,6 +41,10 @@ function rawNamespace(name:string, context:undefined|NsContext, doNotCreate?:boo
       : name.substring(prevIndex)
     )
 
+    if (!key) {
+      throw new Error('Deny empty path piece after "' + walkedPath + '"')
+    }
+
     if (!parent) {
       throw new TypeError(`Deny creating of property '${key}' on ${typeof parent} '${String(parent)}' under the path '${walkedPath}'`)
     }
@@ -114,6 +118,9 @@ function access(name:string, parent?:NsVal):NsVal {
       ? name.substring(prevIndex, nextIndex)
       : name.substring(prevIndex)
     )
+    if (!key) {
+      throw new Error('Deny empty path piece in "' + name + '"')
+    }
 
     if (!parent) {
       return undefined
@@ -141,10 +148,18 @@ function assignInPlace(name:string, val:NsVal, context?:NsContext):void {
 
   const index = lastIndexOfPeriod(name)
   if (index < 0) {
+    if (!name) {
+      throw new Error('Deny empty path')
+    }
     ;(context as any)[name] = val
   } else {
     const ns = name.substring(0, index)
     const field = unescapeKey(name.substring(index + 1))
+
+    if (!field) {
+      throw new Error('Deny empty path piece in "' + name + '"')
+    }
+
     const obj = namespace(ns, context)
     if (typeof obj !== 'object' || !obj) {
       throw new TypeError(`Deny creating of property '${field}' on ${typeof obj} '${String(obj)}' under the path '${ns}'`)
@@ -189,6 +204,9 @@ function appendInPlace(name:string, vals:NsContext, context?:NsContext):void {
     }
   } else {
     for (const key in vals) {
+      if (!key) {
+        throw new Error('Deny appending under an empty field')
+      }
       obj[key] = vals[key]
     }
   }
@@ -197,6 +215,10 @@ function appendInPlace(name:string, vals:NsContext, context?:NsContext):void {
 function assignRaw<T extends NsVal>(name: string, parent: T, value:NsVal, walkedPath:string):T {
   const dotIndex = indexOfPeriod(name)
   const field = unescapeKey(dotIndex < 0 ? name : name.substring(0, dotIndex))
+
+  if (!field) {
+    throw new Error('Deny empty path piece after "' + walkedPath + '"')
+  }
 
   if (typeof parent !== 'object' && parent !== undefined) {
     throw new TypeError(`Deny creating of property '${field}' on ${typeof parent} '${String(parent)}' under the path '${walkedPath}'`)

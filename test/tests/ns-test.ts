@@ -1,7 +1,5 @@
 'use strict'
 
-// TODO: blank paths
-
 import {Test} from 'nodeunit'
 import {namespace, access, assign, assignInPlace, appendInPlace,
     testingPurposes,
@@ -246,6 +244,14 @@ export function test_namespaceForPrototypes(test:Test) {
   test.done()
 }
 
+export function test_namespaceBlankPaths(test:Test) {
+  let obj = {a: {b: 10}}
+  test.throws(() => namespace('', obj), Error)//, 'Deny path piece afer ""')
+  test.throws(() => namespace('a..b', obj), Error)//, 'Deny empty path piece after "a"')
+  test.throws(() => namespace('a.b.', obj), Error)//, 'Deny empty path piece after "a.b"')
+  test.done()
+}
+
 export function test_access(test:Test) {
   var obj = {}
   var z = access('x.y', obj)
@@ -385,6 +391,15 @@ export function test_accessForPrototypes(test:Test) {
 
   test.done()
 }
+
+export function test_accessBlankPaths(test:Test) {
+  let obj = {a: {b: 10}}
+  test.throws(() => access('', obj), Error)//, 'Deny path piece afer ""')
+  test.throws(() => access('a..b', obj), Error)//, 'Deny empty path piece after "a"')
+  test.throws(() => access('a.b.', obj), Error)//, 'Deny empty path piece after "a.b"')
+  test.done()
+}
+
 
 
 export function test_assign(test:Test) {
@@ -539,6 +554,13 @@ export function test_assignForPrototypes(test:Test) {
   test.done()
 }
 
+export function test_assignBlankPaths(test:Test) {
+  let obj = {a: {b: 10}}
+  test.throws(() => assign('', obj, 10), Error)//, 'Deny path piece afer ""')
+  test.throws(() => assign('a..b', obj, 10), Error)//, 'Deny empty path piece after "a"')
+  test.throws(() => assign('a.b.', obj, 10), Error)//, 'Deny empty path piece after "a.b"')
+  test.done()
+}
 
 
 export function test_assignInPlace(test:Test) {
@@ -718,7 +740,13 @@ export function test_assignInPlacePrototypes(test:Test) {
   test.done()
 }
 
-
+export function test_assignInPlaceBlankPaths(test:Test) {
+  let obj = {a: {b: 10}}
+  test.throws(() => assignInPlace('', 10, obj), Error)//, 'Deny path piece afer ""')
+  test.throws(() => assignInPlace('a..b', 10, obj), Error)//, 'Deny empty path piece after "a"')
+  test.throws(() => assignInPlace('a.b.', 10, obj), Error)//, 'Deny empty path piece after "a.b"')
+  test.done()
+}
 
 export function test_assignInPlace_server(test:Test) {
   if (typeof window !== 'undefined') {
@@ -960,6 +988,15 @@ export function test_appendInPlacePrototypes(test:Test) {
   test.strictEqual(typeof obj.x.superFun, 'object')
   test.strictEqual(typeof obj.x.fun, 'function')
 
+  test.done()
+}
+
+export function test_appendInPlaceBlankPaths(test:Test) {
+  let obj = {a: {b: 10}}
+  test.throws(() => appendInPlace('', {}, obj), Error)//, 'Deny path piece afer ""')
+  test.throws(() => appendInPlace('a..b', {}, obj), Error)//, 'Deny empty path piece after "a"')
+  test.throws(() => appendInPlace('a.b.', {}, obj), Error)//, 'Deny empty path piece after "a.b"')
+  test.throws(() => appendInPlace('a', {'': 4}, obj), Error)//, 'Deny appending under an empty field')
   test.done()
 }
 
