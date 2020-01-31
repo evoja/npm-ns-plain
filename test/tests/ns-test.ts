@@ -1,7 +1,6 @@
 'use strict'
 
 // TODO: blank paths
-// TODO: test prototypes
 
 import {Test} from 'nodeunit'
 import {namespace, access, assign, assignInPlace, appendInPlace,
@@ -168,8 +167,6 @@ export function test_namespaceForPrimitives(test:Test) {
 export function test_namespaceForFunctions(test:Test) {
   var obj:any = {
     sum: (a:number, b:number) => a + b,
-    square: (a: number) => a * a,
-    pi: () => Math.PI,
   }
 
   test.strictEqual(typeof namespace('sum', obj), 'function')
@@ -180,6 +177,72 @@ export function test_namespaceForFunctions(test:Test) {
   test.strictEqual(namespace('sum.length', obj), 2)
   test.throws(() => namespace('sum.bind', obj), TypeError)
   test.throws(() => namespace('sum.a', obj), TypeError)
+  test.done()
+}
+
+const somePrototype = {
+  superProp: {a: 10}
+}
+function SomeConstructor() {
+  this.prop = {b: 20}
+}
+SomeConstructor.prototype = somePrototype
+
+class SuperClass {
+  superFun(a:number) {}
+  superProp: any
+  constructor() {
+    this.superProp = {c: 30}
+  }
+}
+class SubClass extends SuperClass {
+  fun(a:number, b: number){}
+  prop: any
+  constructor() {
+    super()
+    this.prop = {d: 40}
+  }
+}
+
+export function test_namespaceForPrototypes(test:Test) {
+  let obj:any = new (SomeConstructor as any)()
+  const superProp = obj.superProp
+
+  // pre test
+  test.strictEqual(obj.superProp.a, 10)
+  test.deepEqual(obj.superProp, {a: 10})
+  // test
+  test.strictEqual(namespace('prop.b', obj), 20)
+  test.strictEqual(typeof namespace('prop.c', obj), 'object')
+  test.deepEqual(obj, {prop: {b: 20, c: {}}})
+  test.strictEqual(typeof namespace('superProp', obj), 'object')
+  test.deepEqual(obj, {prop: {b: 20, c: {}}, superProp: {}})
+  test.notStrictEqual(obj.superProp, superProp)
+  test.strictEqual(typeof namespace('superProp.a', obj), 'object')
+  test.deepEqual(obj, {prop: {b: 20, c: {}}, superProp: {a: {}}})
+
+  obj = new SubClass()
+  // pre test
+  test.strictEqual(obj.superProp.c, 30)
+  test.strictEqual(obj.prop.d, 40)
+  test.deepEqual(obj, {prop: {d: 40}, superProp: {c: 30}})
+  test.strictEqual(typeof obj.superFun, 'function')
+  test.strictEqual(obj.superFun.length, 1)
+  test.strictEqual(typeof obj.fun, 'function')
+  test.strictEqual(obj.fun.length, 2)
+
+  // test
+  test.strictEqual(namespace('superProp.c', obj), 30)
+  test.strictEqual(namespace('prop.d', obj), 40)
+  test.strictEqual(typeof namespace('superFun.length', obj), 'object')
+  test.strictEqual(typeof namespace('fun', obj), 'object')
+  test.deepEqual(obj, {
+    superProp: {c: 30},
+    prop: {d: 40},
+    superFun: {length: {}},
+    fun: {},
+  })
+
   test.done()
 }
 
@@ -274,8 +337,6 @@ export function test_accessForPrimitives(test:Test) {
 export function test_accessForFunctions(test:Test) {
   var obj:any = {
     sum: (a:number, b:number) => a + b,
-    square: (a: number) => a * a,
-    pi: () => Math.PI,
   }
 
   test.strictEqual(typeof access('sum', obj), 'function')
@@ -286,6 +347,42 @@ export function test_accessForFunctions(test:Test) {
   test.strictEqual(access('sum.length', obj), 2)
   test.strictEqual(access('sum.bind', obj), undefined)
   test.strictEqual(access('sum.a', obj), undefined)
+  test.done()
+}
+
+export function test_accessForPrototypes(test:Test) {
+  let obj:any = new (SomeConstructor as any)()
+
+  // pre test
+  test.strictEqual(obj.superProp.a, 10)
+  test.deepEqual(obj.superProp, {a: 10})
+  // test
+  test.strictEqual(access('prop.b', obj), 20)
+  test.strictEqual(access('superProp.a', obj), undefined)
+  test.strictEqual(access('superProp', obj), undefined)
+  test.deepEqual(obj, {prop: {b: 20}})
+
+  obj = new SubClass()
+  // pre test
+  test.strictEqual(obj.superProp.c, 30)
+  test.strictEqual(obj.prop.d, 40)
+  test.deepEqual(obj, {prop: {d: 40}, superProp: {c: 30}})
+  test.strictEqual(typeof obj.superFun, 'function')
+  test.strictEqual(obj.superFun.length, 1)
+  test.strictEqual(typeof obj.fun, 'function')
+  test.strictEqual(obj.fun.length, 2)
+
+  // test
+  test.strictEqual(access('superProp.c', obj), 30)
+  test.strictEqual(access('prop.d', obj), 40)
+  test.strictEqual(access('superFun.length', obj), undefined)
+  test.strictEqual(access('superFun', obj), undefined)
+  test.strictEqual(access('fun', obj), undefined)
+  test.deepEqual(obj, {
+    superProp: {c: 30},
+    prop: {d: 40},
+  })
+
   test.done()
 }
 
@@ -396,8 +493,6 @@ export function test_assignForPrimitives(test:Test) {
 export function test_assignForFunctions(test:Test) {
   var obj:any = {
     sum: (a:number, b:number) => a + b,
-    square: (a: number) => a * a,
-    pi: () => Math.PI,
   }
 
   test.strictEqual(assign('sum', obj, 1).sum, 1)
@@ -405,6 +500,42 @@ export function test_assignForFunctions(test:Test) {
   test.throws(() => assign('sum.length', obj, 10), TypeError)
   test.throws(() => assign('sum.bind', obj, ()=>{}), TypeError)
   test.throws(() => assign('sum.a', obj, 4), TypeError)
+  test.done()
+}
+
+export function test_assignForPrototypes(test:Test) {
+  let obj:any = new (SomeConstructor as any)()
+
+  // pre test
+  test.strictEqual(obj.superProp.a, 10)
+  test.deepEqual(obj.superProp, {a: 10})
+  // test
+  test.strictEqual(assign('prop.b', obj, 200).prop.b, 200)
+  test.strictEqual(assign('prop.bbb', obj, 2000).prop.b, 20)
+  test.strictEqual(assign('superProp.a', obj, 100).superProp.a, 100)
+  test.strictEqual(assign('superProp.aaa', obj, 1000).superProp.a, undefined)
+  const x = assign('prop.c', assign('superProp.d', obj, 'dd'), 'cc')
+  test.deepEqual(x, {prop: {b: 20, c: 'cc'}, superProp: {d: 'dd'}})
+
+  obj = new SubClass()
+  // pre test
+  test.strictEqual(obj.superProp.c, 30)
+  test.strictEqual(obj.prop.d, 40)
+  test.deepEqual(obj, {prop: {d: 40}, superProp: {c: 30}})
+  test.strictEqual(typeof obj.superFun, 'function')
+  test.strictEqual(obj.superFun.length, 1)
+  test.strictEqual(typeof obj.fun, 'function')
+  test.strictEqual(obj.fun.length, 2)
+
+  // test
+  test.strictEqual(assign('superProp.c', obj, 300).superProp.c, 300)
+  test.strictEqual(assign('superProp.ccc', obj, 3000).superProp.c, 30)
+  test.strictEqual(assign('prop.d', obj, 400).prop.d, 400)
+  test.strictEqual(assign('prop.ddd', obj, 4000).prop.d, 40)
+  test.strictEqual(assign('superFun.length', obj, 10).superFun.length, 10)
+  test.strictEqual(assign('superFun', obj, 20).superFun, 20)
+  test.strictEqual(assign('fun', obj, 30).fun, 30)
+
   test.done()
 }
 
@@ -534,8 +665,6 @@ export function test_assignInPlaceForPrimitives(test:Test) {
 export function test_accessInPlaceForFunctions(test:Test) {
   var obj:any = {
     sum: (a:number, b:number) => a + b,
-    square: (a: number) => a * a,
-    pi: () => Math.PI,
   }
   var sum = obj.sum
 
@@ -548,6 +677,47 @@ export function test_accessInPlaceForFunctions(test:Test) {
   test.throws(() => assignInPlace('sum.a', 1, obj), TypeError)
   test.done()
 }
+
+export function test_assignInPlacePrototypes(test:Test) {
+  let obj:any = new (SomeConstructor as any)()
+  let superProp = obj.superProp
+
+  // pre test
+  test.strictEqual(obj.superProp.a, 10)
+  test.deepEqual(obj.superProp, {a: 10})
+
+  // test
+  assignInPlace('prop.bbb', 2000, obj)
+  assignInPlace('superProp.aaa', 1000, obj)
+  test.deepEqual(obj, {prop: {b: 20, bbb: 2000}, superProp: {aaa: 1000}})
+  assignInPlace('superProp.a', 100, obj)
+  test.deepEqual(superProp, {a: 10})
+
+  obj = new SubClass()
+  // pre test
+  test.strictEqual(obj.superProp.c, 30)
+  test.strictEqual(obj.prop.d, 40)
+  test.deepEqual(obj, {prop: {d: 40}, superProp: {c: 30}})
+  test.strictEqual(typeof obj.superFun, 'function')
+  test.strictEqual(obj.superFun.length, 1)
+  test.strictEqual(typeof obj.fun, 'function')
+  test.strictEqual(obj.fun.length, 2)
+
+  // test
+  assignInPlace('superProp.ccc', 3000, obj)
+  assignInPlace('prop.ddd', 4000, obj)
+  assignInPlace('superFun.length', 10, obj)
+  test.deepEqual(obj, {
+    superProp: {c: 30, ccc: 3000},
+    prop: {d: 40, ddd: 4000},
+    superFun: {length: 10},
+  })
+  test.strictEqual(typeof obj.superFun, 'object')
+  test.strictEqual(typeof obj.fun, 'function')
+
+  test.done()
+}
+
 
 
 export function test_assignInPlace_server(test:Test) {
@@ -732,8 +902,6 @@ export function test_appendInPlaceForFunctions(test:Test) {
   var obj:any = {
     x: {
       sum: (a:number, b:number) => a + b,
-      square: (a: number) => a * a,
-      pi: () => Math.PI,
     }
   }
   var sum = obj.x.sum
@@ -750,6 +918,48 @@ export function test_appendInPlaceForFunctions(test:Test) {
   test.throws(() => appendInPlace('sum.length', {a: 10}, obj), TypeError)
   test.throws(() => appendInPlace('sum.bind', {a: 10}, obj), TypeError)
   test.throws(() => appendInPlace('sum.a', {a: 10}, obj), TypeError)
+  test.done()
+}
+
+export function test_appendInPlacePrototypes(test:Test) {
+  let obj:any = new (SomeConstructor as any)()
+  let superProp = obj.superProp
+
+  // pre test
+  test.strictEqual(obj.superProp.a, 10)
+  test.deepEqual(obj.superProp, {a: 10})
+  obj = {x: obj}
+
+  // test
+  appendInPlace('x.prop', {bbb: 2000}, obj)
+  appendInPlace('x.superProp', {aaa: 1000}, obj)
+  test.deepEqual(obj.x, {prop: {b: 20, bbb: 2000}, superProp: {aaa: 1000}})
+  appendInPlace('x.superProp',{a: 100, aaa: 1}, obj)
+  test.deepEqual(superProp, {a: 10})
+
+  obj = new SubClass()
+  // pre test
+  test.strictEqual(obj.superProp.c, 30)
+  test.strictEqual(obj.prop.d, 40)
+  test.deepEqual(obj, {prop: {d: 40}, superProp: {c: 30}})
+  test.strictEqual(typeof obj.superFun, 'function')
+  test.strictEqual(obj.superFun.length, 1)
+  test.strictEqual(typeof obj.fun, 'function')
+  test.strictEqual(obj.fun.length, 2)
+  obj = {x: obj}
+
+  // test
+  appendInPlace('x.superProp', {ccc: 3000}, obj)
+  appendInPlace('x.prop', {ddd: 4000}, obj)
+  appendInPlace('x.superFun', {length: 10}, obj)
+  test.deepEqual(obj.x, {
+    superProp: {c: 30, ccc: 3000},
+    prop: {d: 40, ddd: 4000},
+    superFun: {length: 10},
+  })
+  test.strictEqual(typeof obj.x.superFun, 'object')
+  test.strictEqual(typeof obj.x.fun, 'function')
+
   test.done()
 }
 

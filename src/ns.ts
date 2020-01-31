@@ -220,7 +220,9 @@ function assignRaw<T extends NsVal>(name: string, parent: T, value:NsVal, walked
       return clone
     }
   } else {
-    const replacedValue:NsVal = parent && parent[field]
+    const replacedValue:NsVal = parent && parent.hasOwnProperty(field)
+      ? parent[field]
+      : undefined
     const wp = walkedPath ? walkedPath + '.' + field : field
     const replacingValue = dotIndex < 0
       ? value
