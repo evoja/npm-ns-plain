@@ -275,7 +275,8 @@ const testingPurposes = {
 }
 
 export {
-  NsContext as TNsContext,
+  NsContext,
+  NsVal,
 
   namespace,
   access,

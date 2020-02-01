@@ -1,0 +1,7 @@
+{
+  "collectCoverage": true,
+  "testMatch": [
+    "<rootDir>/out/test/tests/**/?(*-)+(spec|test).[jt]s?(x)"
+  ],
+  "testEnvironment": "node"
+}

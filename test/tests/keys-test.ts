@@ -1,29 +1,29 @@
 'use strict'
 import {escapeKey, unescapeKey, indexOfPeriod, lastIndexOfPeriod} from '../../src/keys'
-import {Test} from 'nodeunit'
 
-type F = (str:string, expected:string, message?:string) => void
-type G = (str:string, start: number|undefined, expected:number, message?:string) => void
+type F = (str:string, expected:string) => void
+type G = (str:string, start: number|undefined, expected:number) => void
 
-export function test_escape(test:Test) {
-  const t:F = (str, expected, message) => test.equal(escapeKey(str), expected, message)
+test('escape', () => {
+  expect.assertions(3)
+  const t:F = (str, expected) => expect(escapeKey(str)).toBe(expected)
   t('.', '\\.')
   t('\\.', '\\\\\\.')
   t('\\\\\\.', '\\\\\\\\\\\\\\.')
-  test.done()
-}
+})
 
-export function test_unescape(test:Test) {
-  const t:F = (str, expected, message) => test.equal(unescapeKey(str), expected, message)
+test('unescape', () => {
+  expect.assertions(4)
+  const t:F = (str, expected) => expect(unescapeKey(str)).toBe(expected)
   t('\\.', '.')
   t('\\\\\\.', '\\.')
   t('\\\\\\\\\\\\\\.', '\\\\\\.')
   t('\\\\\\', '\\\\')
-  test.done()
-}
+})
 
-export function test_indexOfPeriod(test:Test) {
-  const t:G = (str, start, expected, message) => test.equal(indexOfPeriod(str, start), expected, message)
+test('indexOfPeriod', () => {
+  expect.assertions(7)
+  const t:G = (str, start, expected) => expect(indexOfPeriod(str, start)).toBe(expected)
   t('\\.', undefined, -1)
   t('.\\\\.', undefined, 0)
   t('\\.\\..\\.\\\\.\\', undefined, 4)
@@ -31,13 +31,11 @@ export function test_indexOfPeriod(test:Test) {
   t('\\.\\..\\.\\\\.\\', 5, 9)
   t('\\.\\..\\.\\\\.\\', 9, 9)
   t('\\.\\..\\.\\\\.\\', 10, -1)
-  test.done()
-}
+})
 
-
-
-export function test_lastIndexOfPeriod(test:Test) {
-  const t:G = (str, start, expected, message) => test.equal(lastIndexOfPeriod(str, start), expected, message)
+test('lastIndexOfPeriod', () => {
+  expect.assertions(7)
+  const t:G = (str, start, expected) => expect(lastIndexOfPeriod(str, start)).toBe(expected)
   t('\\.', undefined, -1)
   t('.\\\\.', undefined, 3)
   t('\\.\\..\\.\\\\.\\', undefined, 9)
@@ -45,5 +43,4 @@ export function test_lastIndexOfPeriod(test:Test) {
   t('\\.\\..\\.\\\\.\\', 8, 4)
   t('\\.\\..\\.\\\\.\\', 4, 4)
   t('\\.\\..\\.\\\\.\\', 3, -1)
-  test.done()
-}
+})
